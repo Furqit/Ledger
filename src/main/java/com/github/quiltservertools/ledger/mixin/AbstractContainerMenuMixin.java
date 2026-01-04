@@ -68,7 +68,8 @@ public abstract class AbstractContainerMenuMixin implements HandlerWithContext {
     private void ledgerCloseScreenLogChanges(Player player, CallbackInfo ci) {
         if (!player.level().isClientSide() && pos != null) {
             for (var pair : changedStacks.keySet()) {
-                ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.wrapAsHolder(pair.getItem()), 1, pair.getChanges());
+                ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.wrapAsHolder(pair.getItem()), 1);
+                stack.setTag(pair.getChanges());
                 if (stack.isEmpty()) {
                     continue;
                 }
@@ -114,7 +115,7 @@ public abstract class AbstractContainerMenuMixin implements HandlerWithContext {
     public void onStackChanged(@NotNull ItemStack old, @NotNull ItemStack itemStack, @NotNull BlockPos pos) {
         if (old.isEmpty() && !itemStack.isEmpty()) {
             // Add item
-            var key = new ItemData(itemStack.getItem(), itemStack.getComponentsPatch());
+            var key = new ItemData(itemStack.getItem(), itemStack.getTag());
             if (changedStacks.containsKey(key)) {
                 changedStacks.put(key, changedStacks.get(key) + itemStack.getCount());
             } else {
@@ -122,7 +123,7 @@ public abstract class AbstractContainerMenuMixin implements HandlerWithContext {
             }
         } else if (!old.isEmpty() && itemStack.isEmpty()) {
             // Remove item
-            var key = new ItemData(old.getItem(), old.getComponentsPatch());
+            var key = new ItemData(old.getItem(), old.getTag());
             if (changedStacks.containsKey(key)) {
                 changedStacks.put(key, changedStacks.get(key) - old.getCount());
             } else {

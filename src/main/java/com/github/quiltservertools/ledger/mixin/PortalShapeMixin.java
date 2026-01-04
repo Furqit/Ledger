@@ -17,9 +17,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(PortalShape.class)
 public abstract class PortalShapeMixin {
 
-    @Inject(method = "method_64315", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelAccessor;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
-    private static void logPortalPlacement(LevelAccessor worldAccess, BlockState state, BlockPos pos, CallbackInfo ci) {
-        if (worldAccess instanceof ServerLevel world) {
+    @Shadow
+    @Final
+    private LevelAccessor level;
+
+    @Inject(method = "method_30488", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelAccessor;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
+    private void logPortalPlacement(BlockState state, BlockPos pos, CallbackInfo ci) {
+        if (this.level instanceof ServerLevel world) {
             BlockPlaceCallback.EVENT.invoker().place(world, pos.immutable(), state, null, Sources.PORTAL);
         }
     }

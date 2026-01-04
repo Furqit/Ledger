@@ -15,6 +15,7 @@ import com.github.quiltservertools.ledger.registry.ActionRegistry
 import com.github.quiltservertools.ledger.utility.Negatable
 import com.github.quiltservertools.ledger.utility.PlayerResult
 import com.google.common.collect.BiMap
+import com.mojang.authlib.GameProfile
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -22,8 +23,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.newSingleThreadContext
 import net.minecraft.core.BlockPos
-import net.minecraft.resources.Identifier
-import net.minecraft.server.players.NameAndId
+import net.minecraft.resources.ResourceLocation
 import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -116,8 +116,8 @@ object DatabaseManager {
         SchemaUtils.create(
             Tables.Players,
             Tables.Actions,
-            Tables.ActionIdentifiers,
-            Tables.ObjectIdentifiers,
+            Tables.ActionResourceLocations,
+            Tables.ObjectResourceLocations,
             Tables.Sources,
             Tables.Worlds,
         )
@@ -126,14 +126,14 @@ object DatabaseManager {
 
     suspend fun setupCache() {
         execute {
-            Tables.ActionIdentifier.all().forEach {
-                cache.actionIdentifierKeys.put(it.identifier, it.id.value)
+            Tables.ActionResourceLocation.all().forEach {
+                cache.actionResourceLocationKeys.put(it.identifier, it.id.value)
             }
             Tables.World.all().forEach {
-                cache.worldIdentifierKeys.put(it.identifier, it.id.value)
+                cache.worldResourceLocationKeys.put(it.identifier, it.id.value)
             }
-            Tables.ObjectIdentifier.all().forEach {
-                cache.objectIdentifierKeys.put(it.identifier, it.id.value)
+            Tables.ObjectResourceLocation.all().forEach {
+                cache.objectResourceLocationKeys.put(it.identifier, it.id.value)
             }
             Tables.Source.all().forEach {
                 cache.sourceKeys.put(it.name, it.id.value)
@@ -215,18 +215,21 @@ object DatabaseManager {
     private fun getActionsFromQuery(query: Query): List<ActionType> {
         val actions = mutableListOf<ActionType>()
 
-        val actionIdentifierCache = DatabaseCacheService.actionIdentifierKeys.inverse()
-        val worldCache = DatabaseCacheService.worldIdentifierKeys.inverse()
-        val objectIdentifierCache = DatabaseCacheService.objectIdentifierKeys.inverse()
+        val actionResourceLocationCache = DatabaseCacheService.actionResourceLocationKeys.inverse()
+        val worldCache = DatabaseCacheService.worldResourceLocationKeys.inverse()
+        val objectResourceLocationCache = DatabaseCacheService.objectResourceLocationKeys.inverse()
         val sourceCache = DatabaseCacheService.sourceKeys.inverse()
         val playerCache = DatabaseCacheService.playerKeys.inverse()
 
         for (action in query) {
             val typeSupplier = ActionRegistry.getType(
-                actionIdentifierCache[action[Tables.Actions.actionIdentifier].value]!!
+                actionResourceLocationCache[action[Tables.Actions.actionResourceLocation].value]!!
             )
             if (typeSupplier == null) {
-                logWarn("Unknown action type ${actionIdentifierCache[action[Tables.Actions.actionIdentifier].value]}")
+                logWarn(
+                    "Unknown action type " +
+                            "${actionResourceLocationCache[action[Tables.Actions.actionResourceLocation].value]}"
+                )
                 continue
             }
 
@@ -235,13 +238,13 @@ object DatabaseManager {
             type.timestamp = action[Tables.Actions.timestamp]
             type.pos = BlockPos(action[Tables.Actions.x], action[Tables.Actions.y], action[Tables.Actions.z])
             type.world = worldCache[action[Tables.Actions.world].value]
-            type.objectIdentifier = objectIdentifierCache[action[Tables.Actions.objectId].value]!!
-            type.oldObjectIdentifier = objectIdentifierCache[action[Tables.Actions.oldObjectId].value]!!
+            type.objectResourceLocation = objectResourceLocationCache[action[Tables.Actions.objectId].value]!!
+            type.oldObjectResourceLocation = objectResourceLocationCache[action[Tables.Actions.oldObjectId].value]!!
             type.objectState = action[Tables.Actions.blockState]
             type.oldObjectState = action[Tables.Actions.oldBlockState]
             type.sourceName = sourceCache[action[Tables.Actions.sourceName].value]!!
             type.sourceProfile = action.getOrNull(Tables.Actions.sourcePlayer)?.let {
-                Ledger.server.services().nameToIdCache?.get(playerCache[it.value]!!)?.orElse(null)
+                Ledger.server.profileCache?.get(playerCache[it.value]!!)?.orElse(null)
             }
             type.extraData = action[Tables.Actions.extraData]
             type.rolledBack = action[Tables.Actions.rolledBack]
@@ -286,7 +289,7 @@ object DatabaseManager {
             op,
             params.actions,
             DatabaseManager::getActionId,
-            Tables.Actions.actionIdentifier
+            Tables.Actions.actionResourceLocation
         )
 
         op = addParameters(
@@ -401,7 +404,7 @@ object DatabaseManager {
         }
     }
 
-    suspend fun registerWorld(identifier: Identifier) =
+    suspend fun registerWorld(identifier: ResourceLocation) =
         execute {
             insertWorld(identifier)
         }
@@ -416,7 +419,7 @@ object DatabaseManager {
             insertOrUpdatePlayer(uuid, name)
         }
 
-    suspend fun insertIdentifiers(identifiers: Collection<Identifier>) =
+    suspend fun insertResourceLocations(identifiers: Collection<ResourceLocation>) =
         execute {
             insertRegKeys(identifiers)
         }
@@ -444,41 +447,41 @@ object DatabaseManager {
         }
     }
 
-    suspend fun searchPlayers(players: Set<NameAndId>): List<PlayerResult> =
+    suspend fun searchPlayers(players: Set<GameProfile>): List<PlayerResult> =
         execute {
             return@execute selectPlayers(players)
         }
 
     private fun Transaction.insertActionType(id: String) {
-        Tables.ActionIdentifiers.insertIgnore {
-            it[actionIdentifier] = id
+        Tables.ActionResourceLocations.insertIgnore {
+            it[actionResourceLocation] = id
         }
     }
 
-    private fun Transaction.insertWorld(identifier: Identifier) {
+    private fun Transaction.insertWorld(identifier: ResourceLocation) {
         Tables.Worlds.insertIgnore {
             it[this.identifier] = identifier.toString()
         }
     }
 
-    private fun Transaction.insertRegKeys(identifiers: Collection<Identifier>) {
-        Tables.ObjectIdentifiers.batchInsert(identifiers, true) { identifier ->
-            this[Tables.ObjectIdentifiers.identifier] = identifier.toString()
+    private fun Transaction.insertRegKeys(identifiers: Collection<ResourceLocation>) {
+        Tables.ObjectResourceLocations.batchInsert(identifiers, true) { identifier ->
+            this[Tables.ObjectResourceLocations.identifier] = identifier.toString()
         }
     }
 
     private fun Transaction.insertActions(actions: List<ActionType>) {
         Tables.Actions.batchInsert(actions, shouldReturnGeneratedValues = false) { action ->
-            this[Tables.Actions.actionIdentifier] = getOrCreateActionId(action.identifier)
+            this[Tables.Actions.actionResourceLocation] = getOrCreateActionId(action.identifier)
             this[Tables.Actions.timestamp] = action.timestamp
             this[Tables.Actions.x] = action.pos.x
             this[Tables.Actions.y] = action.pos.y
             this[Tables.Actions.z] = action.pos.z
-            this[Tables.Actions.objectId] = getOrCreateRegistryKeyId(action.objectIdentifier)
-            this[Tables.Actions.oldObjectId] = getOrCreateRegistryKeyId(action.oldObjectIdentifier)
+            this[Tables.Actions.objectId] = getOrCreateRegistryKeyId(action.objectResourceLocation)
+            this[Tables.Actions.oldObjectId] = getOrCreateRegistryKeyId(action.oldObjectResourceLocation)
             this[Tables.Actions.world] = getOrCreateWorldId(
                 action.world ?: Ledger.server.overworld().dimension()
-                .identifier()
+                    .location()
             )
             this[Tables.Actions.blockState] = action.objectState
             this[Tables.Actions.oldBlockState] = action.oldObjectState
@@ -603,27 +606,27 @@ object DatabaseManager {
     private fun getOrCreateActionId(actionTypeId: String): Int =
         getOrCreateObjectId(
             actionTypeId,
-            cache.actionIdentifierKeys,
-            Tables.ActionIdentifier,
-            Tables.ActionIdentifiers,
-            Tables.ActionIdentifiers.actionIdentifier
+            cache.actionResourceLocationKeys,
+            Tables.ActionResourceLocation,
+            Tables.ActionResourceLocations,
+            Tables.ActionResourceLocations.actionResourceLocation
         )
 
-    private fun getOrCreateRegistryKeyId(identifier: Identifier): Int =
+    private fun getOrCreateRegistryKeyId(identifier: ResourceLocation): Int =
         getOrCreateObjectId(
             identifier,
-            Identifier::toString,
-            cache.objectIdentifierKeys,
-            Tables.ObjectIdentifier,
-            Tables.ObjectIdentifiers,
-            Tables.ObjectIdentifiers.identifier
+            ResourceLocation::toString,
+            cache.objectResourceLocationKeys,
+            Tables.ObjectResourceLocation,
+            Tables.ObjectResourceLocations,
+            Tables.ObjectResourceLocations.identifier
         )
 
-    private fun getOrCreateWorldId(identifier: Identifier): Int =
+    private fun getOrCreateWorldId(identifier: ResourceLocation): Int =
         getOrCreateObjectId(
             identifier,
-            Identifier::toString,
-            cache.worldIdentifierKeys,
+            ResourceLocation::toString,
+            cache.worldResourceLocationKeys,
             Tables.World,
             Tables.Worlds,
             Tables.Worlds.identifier
@@ -638,25 +641,25 @@ object DatabaseManager {
     private fun getActionId(actionTypeId: String): Int? =
         getObjectId(
             actionTypeId,
-            cache.actionIdentifierKeys,
-            Tables.ActionIdentifier,
-            Tables.ActionIdentifiers.actionIdentifier
+            cache.actionResourceLocationKeys,
+            Tables.ActionResourceLocation,
+            Tables.ActionResourceLocations.actionResourceLocation
         )
 
-    private fun getRegistryKeyId(identifier: Identifier): Int? =
+    private fun getRegistryKeyId(identifier: ResourceLocation): Int? =
         getObjectId(
             identifier,
-            Identifier::toString,
-            cache.objectIdentifierKeys,
-            Tables.ObjectIdentifier,
-            Tables.ObjectIdentifiers.identifier
+            ResourceLocation::toString,
+            cache.objectResourceLocationKeys,
+            Tables.ObjectResourceLocation,
+            Tables.ObjectResourceLocations.identifier
         )
 
-    private fun getWorldId(identifier: Identifier): Int? =
+    private fun getWorldId(identifier: ResourceLocation): Int? =
         getObjectId(
             identifier,
-            Identifier::toString,
-            cache.worldIdentifierKeys,
+            ResourceLocation::toString,
+            cache.worldResourceLocationKeys,
             Tables.World,
             Tables.Worlds.identifier
         )
@@ -667,10 +670,10 @@ object DatabaseManager {
             id inSubQuery Tables.Actions.select(id).where(buildQueryParams(params))
         }
 
-    private fun Transaction.selectPlayers(players: Set<NameAndId>): List<PlayerResult> {
+    private fun Transaction.selectPlayers(players: Set<GameProfile>): List<PlayerResult> {
         val query = Tables.Players.selectAll()
         for (player in players) {
-            query.orWhere { Tables.Players.playerId eq player.id() }
+            query.orWhere { Tables.Players.playerId eq player.id }
         }
 
         return Tables.Player.wrapRows(query).toList().map { PlayerResult.fromRow(it) }

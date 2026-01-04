@@ -1,22 +1,18 @@
 package com.github.quiltservertools.ledger.actions
 
-import com.github.quiltservertools.ledger.utility.LOGGER
 import com.github.quiltservertools.ledger.utility.NbtUtils
 import com.github.quiltservertools.ledger.utility.TextColorPallet
 import com.github.quiltservertools.ledger.utility.UUID
 import com.github.quiltservertools.ledger.utility.getWorld
 import com.github.quiltservertools.ledger.utility.literal
 import net.minecraft.commands.CommandSourceStack
-import net.minecraft.core.UUIDUtil
 import net.minecraft.nbt.TagParser
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.ProblemReporter
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.item.ItemEntity
-import net.minecraft.world.level.storage.TagValueInput
 
 open class ItemPickUpActionType : AbstractActionType() {
     override val identifier = "item-pick-up"
@@ -26,7 +22,7 @@ open class ItemPickUpActionType : AbstractActionType() {
 
     private fun getStack(server: MinecraftServer) = NbtUtils.itemFromProperties(
         extraData,
-        objectIdentifier,
+        objectResourceLocation,
         server.registryAccess()
     )
 
@@ -34,11 +30,12 @@ open class ItemPickUpActionType : AbstractActionType() {
         val stack = getStack(source.server)
 
         return "${stack.count} ".literal().append(
-            stack.itemName
+            stack.hoverName
         ).setStyle(TextColorPallet.secondaryVariant).withStyle {
             it.withHoverEvent(
-                HoverEvent.ShowItem(
-                    stack
+                HoverEvent(
+                    HoverEvent.Action.SHOW_ITEM,
+                    HoverEvent.ItemStackInfo(stack)
                 )
             )
         }
@@ -47,18 +44,14 @@ open class ItemPickUpActionType : AbstractActionType() {
     override fun rollback(server: MinecraftServer): Boolean {
         val world = server.getWorld(world)!!
 
-        val oldEntity = TagParser.parseCompoundFully(oldObjectState!!)
-        val optionalUUID = oldEntity.read(UUID, UUIDUtil.CODEC)
-        if (optionalUUID.isEmpty) return false
-        val entity = world.getEntity(optionalUUID.get())
+        val oldEntity = TagParser.parseTag(oldObjectState!!)
+        if (!oldEntity.hasUUID(UUID)) return false
+        val entity = world.getEntity(oldEntity.getUUID(UUID))
 
         if (entity == null) {
             val entity = ItemEntity(EntityType.ITEM, world)
-            ProblemReporter.ScopedCollector({ "ledger:rollback:item-pick-up@$pos" }, LOGGER).use {
-                val readView = TagValueInput.create(it, world.registryAccess(), oldEntity)
-                entity.load(readView)
-                world.addFreshEntity(entity)
-            }
+            entity.load(oldEntity)
+            world.addFreshEntity(entity)
         }
         return true
     }
@@ -66,10 +59,9 @@ open class ItemPickUpActionType : AbstractActionType() {
     override fun restore(server: MinecraftServer): Boolean {
         val world = server.getWorld(world)
 
-        val oldEntity = TagParser.parseCompoundFully(oldObjectState!!)
-        val optionalUUID = oldEntity.read(UUID, UUIDUtil.CODEC)
-        if (optionalUUID.isEmpty) return false
-        val entity = world?.getEntity(optionalUUID.get())
+        val oldEntity = TagParser.parseTag(oldObjectState!!)
+        if (!oldEntity.hasUUID(UUID)) return false
+        val entity = world?.getEntity(oldEntity.getUUID(UUID))
 
         if (entity != null) {
             entity.remove(Entity.RemovalReason.DISCARDED)

@@ -1,19 +1,19 @@
 package com.github.quiltservertools.ledger.mixin;
 
+import com.github.quiltservertools.ledger.callbacks.BlockBreakCallback;
 import com.github.quiltservertools.ledger.callbacks.BlockPlaceCallback;
 import com.github.quiltservertools.ledger.utility.PlayerCausable;
 import com.github.quiltservertools.ledger.utility.Sources;
 import com.llamalad7.mixinextras.sugar.Local;
-import java.util.List;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.ServerExplosion;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,11 +22,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ServerExplosion.class)
-public abstract class ServerExplosionMixin {
-    @Shadow
-    @Final
-    private ServerLevel level;
+@Mixin(Explosion.class)
+public abstract class ExplosionMixin {
 
     @Shadow
     public abstract @Nullable LivingEntity getIndirectSourceEntity();
@@ -36,14 +33,22 @@ public abstract class ServerExplosionMixin {
     @Nullable
     private Entity source;
 
+    @Shadow
+    @Final
+    private Level level;
+
+    @Shadow
+    @Nullable
+    public abstract Entity getDirectSourceEntity();
+
     @Inject(
-        method = "createFire",
+        method = "finalizeExplosion",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/server/level/ServerLevel;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z"
+            target = "Lnet/minecraft/world/level/Level;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z"
         )
     )
-    private void ledgerExplosionFireCallback(List<BlockPos> positions, CallbackInfo ci, @Local BlockPos blockPos) {
+    private void ledgerExplosionFireCallback(boolean bl, CallbackInfo ci, @Local BlockPos blockPos) {
         BlockState blockState = BaseFireBlock.getState(level, blockPos);
 
         LivingEntity entity;
@@ -67,6 +72,38 @@ public abstract class ServerExplosionMixin {
             level.getBlockEntity(blockPos) != null ? level.getBlockEntity(blockPos) : null,
             source,
             entity instanceof Player player ? player : null
+        );
+    }
+
+    @Inject(
+        method = "finalizeExplosion",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"
+        )
+    )
+    public void ledgerBlockExplodeCallback(boolean bl, CallbackInfo ci, @Local BlockPos pos, @Local BlockState state) {
+        LivingEntity entity;
+        if (this.source instanceof PlayerCausable playerCausable && playerCausable.getCausingPlayer() != null) {
+            entity = playerCausable.getCausingPlayer();
+        } else {
+            entity = getIndirectSourceEntity();
+        }
+
+        String source;
+        if (getDirectSourceEntity() != null && !(getDirectSourceEntity() instanceof Player)) {
+            source = BuiltInRegistries.ENTITY_TYPE.getKey(getDirectSourceEntity().getType()).getPath();
+        } else {
+            source = Sources.EXPLOSION;
+        }
+
+        BlockBreakCallback.EVENT.invoker().breakBlock(
+                level,
+                pos,
+                state,
+                level.getBlockEntity(pos) != null ? level.getBlockEntity(pos) : null,
+                source,
+                entity instanceof Player player ? player : null
         );
     }
 }

@@ -20,11 +20,12 @@ public abstract class EnderDragonMixin {
             method = "checkWalls",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/server/level/ServerLevel;removeBlock(Lnet/minecraft/core/BlockPos;Z)Z"
+                    target = "Lnet/minecraft/world/level/Level;removeBlock(Lnet/minecraft/core/BlockPos;Z)Z"
             )
     )
-    private void logEnderDragonBreakingBlocks(ServerLevel world, AABB box, CallbackInfoReturnable<Boolean> cir, @Local BlockPos blockPos) {
+    private void logEnderDragonBreakingBlocks(AABB aABB, CallbackInfoReturnable<Boolean> cir, @Local BlockPos blockPos) {
         EnderDragon entity = (EnderDragon) (Object) this;
+        Level world = entity.level();
         BlockBreakCallback.EVENT.invoker().breakBlock(world, blockPos, world.getBlockState(blockPos), world.getBlockEntity(blockPos), BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath());
     }
 }

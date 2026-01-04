@@ -21,7 +21,6 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.damagesource.DamageSource
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
-import net.minecraft.world.entity.animal.golem.CopperGolem
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
@@ -53,7 +52,7 @@ object ActionFactory {
         source: String = Sources.PLAYER
     ): BlockChangeActionType {
         val action = blockBreakAction(world, pos, state, source, entity)
-        action.sourceProfile = player.nameAndId()
+        action.sourceProfile = player.gameProfile
 
         return action
     }
@@ -80,7 +79,7 @@ object ActionFactory {
         source: String = Sources.PLAYER
     ): BlockChangeActionType {
         val action = blockPlaceAction(world, pos, state, source, entity)
-        action.sourceProfile = player.nameAndId()
+        action.sourceProfile = player.gameProfile
 
         return action
     }
@@ -95,13 +94,13 @@ object ActionFactory {
         entity: BlockEntity? = null
     ) {
         action.pos = pos
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.BLOCK.getKey(state.block)
-        action.oldObjectIdentifier = BuiltInRegistries.BLOCK.getKey(oldState.block)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.BLOCK.getKey(state.block)
+        action.oldObjectResourceLocation = BuiltInRegistries.BLOCK.getKey(oldState.block)
         action.objectState = NbtUtils.blockStateToProperties(state)?.toString()
         action.oldObjectState = NbtUtils.blockStateToProperties(oldState)?.toString()
         action.sourceName = source
-        action.extraData = entity?.saveWithoutMetadata(world.registryAccess())?.toString()
+        action.extraData = entity?.saveWithoutMetadata()?.toString()
     }
 
     fun itemInsertAction(world: Level, stack: ItemStack, pos: BlockPos, source: String): ItemInsertActionType {
@@ -121,10 +120,7 @@ object ActionFactory {
         var sourceType = Sources.UNKNOWN
         if (source is Player) {
             sourceType = Sources.PLAYER
-            action.sourceProfile = source.nameAndId()
-        } else if (source is CopperGolem) {
-            sourceType = Sources.COPPER_GOLEM
-            action.sourceName = sourceType
+            action.sourceProfile = source.gameProfile
         }
         setItemData(action, pos, world, stack, sourceType)
 
@@ -148,10 +144,7 @@ object ActionFactory {
         var sourceType = Sources.UNKNOWN
         if (source is Player) {
             sourceType = Sources.PLAYER
-            action.sourceProfile = source.nameAndId()
-        } else if (source is CopperGolem) {
-            sourceType = Sources.COPPER_GOLEM
-            action.sourceName = sourceType
+            action.sourceProfile = source.gameProfile
         }
         setItemData(action, pos, world, stack, sourceType)
 
@@ -167,7 +160,7 @@ object ActionFactory {
         setItemData(action, entity.blockPosition(), entity.level(), entity.item, Sources.PLAYER)
 
         action.oldObjectState = entity.createNbt().toString()
-        action.sourceProfile = source.nameAndId()
+        action.sourceProfile = source.gameProfile
 
         return action
     }
@@ -182,9 +175,7 @@ object ActionFactory {
 
         action.objectState = entity.createNbt().toString()
         if (source is Player) {
-            action.sourceProfile = source.nameAndId()
-        } else if (source is CopperGolem) {
-            action.sourceName = Sources.COPPER_GOLEM
+            action.sourceProfile = source.gameProfile
         }
 
         return action
@@ -201,7 +192,7 @@ object ActionFactory {
     ): ActionType {
         val action = BlockChangeActionType()
         setBlockData(action, pos, world, newState, oldState, source, oldBlockEntity)
-        action.sourceProfile = player?.nameAndId()
+        action.sourceProfile = player?.gameProfile
         return action
     }
 
@@ -213,8 +204,8 @@ object ActionFactory {
         source: String
     ) {
         action.pos = pos
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.ITEM.getKey(stack.item)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.ITEM.getKey(stack.item)
         action.sourceName = source
         if (!stack.isEmpty) {
             action.extraData = stack.createNbt(world.registryAccess()).toString()
@@ -228,7 +219,7 @@ object ActionFactory {
         when {
             killer is Player -> {
                 setEntityData(action, pos, world, entity, Sources.PLAYER)
-                action.sourceProfile = killer.nameAndId()
+                action.sourceProfile = killer.gameProfile
             }
 
             killer != null -> {
@@ -258,8 +249,8 @@ object ActionFactory {
         source: String
     ) {
         action.pos = pos
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
         action.sourceName = source
         action.extraData = entity.createNbt().toString()
     }
@@ -276,9 +267,9 @@ object ActionFactory {
         val action = EntityChangeActionType()
 
         action.pos = pos
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
-        action.oldObjectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.oldObjectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
 
         if (itemStack != null && !itemStack.isEmpty) {
             action.extraData = itemStack.createNbt(world.registryAccess()).toString()
@@ -288,7 +279,7 @@ object ActionFactory {
         action.sourceName = sourceType
 
         if (entityActor is Player) {
-            action.sourceProfile = entityActor.nameAndId()
+            action.sourceProfile = entityActor.gameProfile
         }
 
         return action
@@ -303,14 +294,14 @@ object ActionFactory {
         val action = EntityMountActionType()
 
         action.pos = entity.blockPosition()
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
-        action.oldObjectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.oldObjectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
 
         action.objectState = entity.createNbt().toString()
         action.sourceName = Sources.PLAYER
 
-        action.sourceProfile = player.nameAndId()
+        action.sourceProfile = player.gameProfile
 
         return action
     }
@@ -324,14 +315,14 @@ object ActionFactory {
         val action = EntityDismountActionType()
 
         action.pos = entity.blockPosition()
-        action.world = world.dimension().identifier()
-        action.objectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
-        action.oldObjectIdentifier = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.world = world.dimension().location()
+        action.objectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
+        action.oldObjectResourceLocation = BuiltInRegistries.ENTITY_TYPE.getKey(entity.type)
 
         action.objectState = entity.createNbt().toString()
         action.sourceName = Sources.PLAYER
 
-        action.sourceProfile = player.nameAndId()
+        action.sourceProfile = player.gameProfile
 
         return action
     }

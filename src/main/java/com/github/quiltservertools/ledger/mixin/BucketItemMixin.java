@@ -30,52 +30,36 @@ public abstract class BucketItemMixin {
     private Fluid content;
 
     @Inject(method = "emptyContents", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;destroyBlock(Lnet/minecraft/core/BlockPos;Z)Z"))
-    private void logFluidBreak(LivingEntity user, Level world, BlockPos pos, BlockHitResult hitResult, CallbackInfoReturnable<Boolean> cir) {
+    private void logFluidBreak(Player player, Level world, BlockPos pos, BlockHitResult blockHitResult, CallbackInfoReturnable<Boolean> cir) {
         var blockstate = world.getBlockState(pos);
-        if (!blockstate.isAir() && user instanceof Player player) {
+        if (!blockstate.isAir()) {
             BlockBreakCallback.EVENT.invoker().breakBlock(world, pos, world.getBlockState(pos), world.getBlockEntity(pos), Sources.FLUID, player);
         }
     }
 
-    @Inject(method = "emptyContents", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/BucketItem;playEmptySound(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/core/BlockPos;)V"))
-    private void logFluidPlace(LivingEntity user, Level world, BlockPos pos, BlockHitResult hitResult, CallbackInfoReturnable<Boolean> cir) {
-        if (user instanceof Player player) {
-            BlockPlaceCallback.EVENT.invoker().place(world, pos, this.content.defaultFluidState().createLegacyBlock(), null, player);
-        } else {
-            BlockPlaceCallback.EVENT.invoker().place(world, pos, this.content.defaultFluidState().createLegacyBlock(), null, Sources.REDSTONE);
-        }
+    @Inject(method = "emptyContents", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/BucketItem;playEmptySound(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/core/BlockPos;)V"))
+    private void logFluidPlace(Player player, Level world, BlockPos pos, BlockHitResult blockHitResult, CallbackInfoReturnable<Boolean> cir) {
+        BlockPlaceCallback.EVENT.invoker().place(world, pos, this.content.defaultFluidState().createLegacyBlock(), null, player);
     }
 
     @Inject(
             method = "emptyContents",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/BucketItem;playEmptySound(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/core/BlockPos;)V",
+                    target = "Lnet/minecraft/world/item/BucketItem;playEmptySound(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/level/LevelAccessor;Lnet/minecraft/core/BlockPos;)V",
                     ordinal = 0
             )
     )
-    private void logWaterlog(LivingEntity user, Level world, BlockPos pos, BlockHitResult hitResult, CallbackInfoReturnable<Boolean> cir, @Local BlockState blockState) {
-        if (user instanceof Player player) {
-            BlockChangeCallback.EVENT.invoker().changeBlock(
-                    world,
-                    pos,
-                    blockState,
-                    world.getBlockState(pos),
-                    world.getBlockEntity(pos),
-                    world.getBlockEntity(pos),
-                    player
-            );
-        } else {
-            BlockChangeCallback.EVENT.invoker().changeBlock(
-                    world,
-                    pos,
-                    blockState,
-                    world.getBlockState(pos),
-                    world.getBlockEntity(pos),
-                    world.getBlockEntity(pos),
-                    Sources.REDSTONE
-            ); //TODO This is dumb. Make some sort of Source wrapper
-        }
+    private void logWaterlog(Player player, Level world, BlockPos pos, BlockHitResult blockHitResult, CallbackInfoReturnable<Boolean> cir, @Local BlockState blockState) {
+        BlockChangeCallback.EVENT.invoker().changeBlock(
+                world,
+                pos,
+                blockState,
+                world.getBlockState(pos),
+                world.getBlockEntity(pos),
+                world.getBlockEntity(pos),
+                player
+        );
     }
 
     @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;awardStat(Lnet/minecraft/stats/Stat;)V", ordinal = 0))

@@ -39,7 +39,7 @@ object ExtensionManager {
     }
 
     private fun failExtensionRegistration(extension: LedgerExtension) {
-        Ledger.logger.error("Unable to load extension ${extension.getIdentifier()}")
+        Ledger.logger.error("Unable to load extension ${extension.getResourceLocation()}")
     }
 
     fun getDataSource() = dataSource

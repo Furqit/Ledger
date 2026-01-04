@@ -31,7 +31,7 @@ abstract class ItemChangeActionType : AbstractActionType() {
 
     private fun getStack(server: MinecraftServer) = NbtUtils.itemFromProperties(
         extraData,
-        objectIdentifier,
+        objectResourceLocation,
         server.registryAccess()
     )
 
@@ -39,18 +39,19 @@ abstract class ItemChangeActionType : AbstractActionType() {
         val stack = getStack(source.server)
 
         return "${stack.count} ".literal().append(
-            stack.itemName
+            stack.hoverName
         ).setStyle(TextColorPallet.secondaryVariant).withStyle {
             it.withHoverEvent(
-                HoverEvent.ShowItem(
-                    stack
+                HoverEvent(
+                    HoverEvent.Action.SHOW_ITEM,
+                    HoverEvent.ItemStackInfo(stack)
                 )
             )
         }
     }
 
     protected fun previewItemChange(preview: Preview, player: ServerPlayer, insert: Boolean) {
-        val world = player.level().server.getWorld(world)
+        val world = player.serverLevel().server.getWorld(world)
         val state = world?.getBlockState(pos)
         state?.`is`(Blocks.CHEST)?.let {
             if (it) {
@@ -66,7 +67,7 @@ abstract class ItemChangeActionType : AbstractActionType() {
     private fun addPreview(preview: Preview, player: ServerPlayer, pos: BlockPos, insert: Boolean) {
         preview.modifiedItems.compute(pos) { _, list ->
             list ?: mutableListOf()
-        }?.add(Pair(getStack(player.level().server), insert))
+        }?.add(Pair(getStack(player.serverLevel().server), insert))
     }
 
     private fun getInventory(world: ServerLevel): Container? {

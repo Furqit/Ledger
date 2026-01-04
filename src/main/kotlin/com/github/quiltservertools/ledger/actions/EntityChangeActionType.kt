@@ -1,28 +1,25 @@
 package com.github.quiltservertools.ledger.actions
 
-import com.github.quiltservertools.ledger.utility.LOGGER
 import com.github.quiltservertools.ledger.utility.TextColorPallet
 import com.github.quiltservertools.ledger.utility.UUID
 import com.github.quiltservertools.ledger.utility.getWorld
 import com.github.quiltservertools.ledger.utility.literal
 import com.mojang.brigadier.exceptions.CommandSyntaxException
+import net.minecraft.Util
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.core.RegistryAccess
-import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.nbt.NbtOps
 import net.minecraft.nbt.TagParser
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
-import net.minecraft.util.ProblemReporter
-import net.minecraft.util.Util
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.HangingEntity
 import net.minecraft.world.entity.decoration.ItemFrame
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.level.storage.TagValueInput
 
 class EntityChangeActionType : AbstractActionType() {
     override val identifier = "entity-change"
@@ -39,15 +36,13 @@ class EntityChangeActionType : AbstractActionType() {
     private fun getStack(registryManager: RegistryAccess): ItemStack {
         if (extraData == null) return ItemStack.EMPTY
         try {
-            val readView = TagValueInput.create(
-                ProblemReporter.DISCARDING,
-                registryManager,
-                TagParser.parseCompoundFully(extraData!!)
-            )
-            return readView.read(ItemStack.MAP_CODEC).orElse(ItemStack.EMPTY)
+            return ItemStack.CODEC.parse(
+                NbtOps.INSTANCE,
+                TagParser.parseTag(extraData!!)
+            ).result().orElse(ItemStack.EMPTY)
         } catch (_: CommandSyntaxException) {
             // In an earlier version of ledger extraData only stored the item id
-            val item = BuiltInRegistries.ITEM.getValue(Identifier.parse(extraData!!))
+            val item = BuiltInRegistries.ITEM.get(ResourceLocation(extraData!!))
             return item.defaultInstance
         }
     }
@@ -58,12 +53,13 @@ class EntityChangeActionType : AbstractActionType() {
             Component.translatable(
                 Util.makeDescriptionId(
                     "entity",
-                    objectIdentifier
+                    objectResourceLocation
                 )
             ).setStyle(TextColorPallet.secondaryVariant).withStyle {
                 it.withHoverEvent(
-                    HoverEvent.ShowText(
-                        objectIdentifier.toString().literal()
+                    HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        objectResourceLocation.toString().literal()
                     )
                 )
             }
@@ -79,8 +75,9 @@ class EntityChangeActionType : AbstractActionType() {
                     stack.item.descriptionId
                 ).setStyle(TextColorPallet.secondaryVariant).withStyle {
                     it.withHoverEvent(
-                        HoverEvent.ShowItem(
-                            stack
+                        HoverEvent(
+                            HoverEvent.Action.SHOW_ITEM,
+                            HoverEvent.ItemStackInfo(stack)
                         )
                     )
                 }
@@ -92,21 +89,17 @@ class EntityChangeActionType : AbstractActionType() {
     override fun rollback(server: MinecraftServer): Boolean {
         val world = server.getWorld(world)
 
-        val oldEntity = TagParser.parseCompoundFully(oldObjectState!!)
-        val optionalUUID = oldEntity.read(UUID, UUIDUtil.CODEC)
-        if (optionalUUID.isEmpty) return false
-        val entity = world?.getEntity(optionalUUID.get())
+        val oldEntity = TagParser.parseTag(oldObjectState!!)
+        if (!oldEntity.hasUUID(UUID)) return false
+        val entity = world?.getEntity(oldEntity.getUUID(UUID))
 
         if (entity != null) {
-            ProblemReporter.ScopedCollector({ "ledger:rollback:entity-change@$pos" }, LOGGER).use {
-                val readView = TagValueInput.create(it, server.registryAccess(), oldEntity)
-                if (entity is ItemFrame) {
-                    entity.item = ItemStack.EMPTY
-                }
-                when (entity) {
-                    is LivingEntity -> entity.load(readView)
-                    is HangingEntity -> entity.load(readView)
-                }
+            if (entity is ItemFrame) {
+                entity.item = ItemStack.EMPTY
+            }
+            when (entity) {
+                is LivingEntity -> entity.load(oldEntity)
+                is HangingEntity -> entity.load(oldEntity)
             }
             return true
         }
@@ -115,21 +108,17 @@ class EntityChangeActionType : AbstractActionType() {
 
     override fun restore(server: MinecraftServer): Boolean {
         val world = server.getWorld(world)
-        val newEntity = TagParser.parseCompoundFully(objectState!!)
-        val optionalUUID = newEntity.read(UUID, UUIDUtil.CODEC)
-        if (optionalUUID.isEmpty) return false
-        val entity = world?.getEntity(optionalUUID.get())
+        val newEntity = TagParser.parseTag(objectState!!)
+        if (!newEntity.hasUUID(UUID)) return false
+        val entity = world?.getEntity(newEntity.getUUID(UUID))
 
         if (entity != null) {
-            ProblemReporter.ScopedCollector({ "ledger:restore:entity-change@$pos" }, LOGGER).use {
-                val readView = TagValueInput.create(it, server.registryAccess(), newEntity)
-                if (entity is ItemFrame) {
-                    entity.item = ItemStack.EMPTY
-                }
-                when (entity) {
-                    is LivingEntity -> entity.load(readView)
-                    is HangingEntity -> entity.load(readView)
-                }
+            if (entity is ItemFrame) {
+                entity.item = ItemStack.EMPTY
+            }
+            when (entity) {
+                is LivingEntity -> entity.load(newEntity)
+                is HangingEntity -> entity.load(newEntity)
             }
             return true
         }

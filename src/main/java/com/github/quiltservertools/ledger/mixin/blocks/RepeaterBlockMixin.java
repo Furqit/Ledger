@@ -2,6 +2,7 @@ package com.github.quiltservertools.ledger.mixin.blocks;
 
 import com.github.quiltservertools.ledger.callbacks.BlockChangeCallback;
 import com.github.quiltservertools.ledger.utility.Sources;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.RepeaterBlock;
 import net.minecraft.world.entity.player.Player;
@@ -23,8 +24,8 @@ public abstract class RepeaterBlockMixin {
     @Final
     public static IntegerProperty DELAY;
 
-    @Inject(method = "useWithoutItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
-    public void logRepeaterInteraction(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit, CallbackInfoReturnable<InteractionResult> cir) {
+    @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
+    public void logRepeaterInteraction(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit, CallbackInfoReturnable<InteractionResult> cir) {
         BlockChangeCallback.EVENT.invoker().changeBlock(world, pos, state, state.cycle(DELAY), null, null, Sources.INTERACT, player);
     }
 }

@@ -5,17 +5,17 @@ import com.github.quiltservertools.ledger.utility.MessageUtils
 import com.github.quiltservertools.ledger.utility.Sources
 import com.github.quiltservertools.ledger.utility.TextColorPallet
 import com.github.quiltservertools.ledger.utility.literal
+import com.mojang.authlib.GameProfile
 import net.minecraft.ChatFormatting
+import net.minecraft.Util
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.server.players.NameAndId
-import net.minecraft.util.Util
 import net.minecraft.world.level.Level
 import java.time.Instant
 import kotlin.time.ExperimentalTime
@@ -24,13 +24,13 @@ abstract class AbstractActionType : ActionType {
     override var id: Int = -1
     override var timestamp: Instant = Instant.now()
     override var pos: BlockPos = BlockPos.ZERO
-    override var world: Identifier? = null
-    override var objectIdentifier: Identifier = Identifier.withDefaultNamespace("air")
-    override var oldObjectIdentifier: Identifier = Identifier.withDefaultNamespace("air")
+    override var world: ResourceLocation? = null
+    override var objectResourceLocation: ResourceLocation = ResourceLocation("air")
+    override var oldObjectResourceLocation: ResourceLocation = ResourceLocation("air")
     override var objectState: String? = null
     override var oldObjectState: String? = null
     override var sourceName: String = Sources.UNKNOWN
-    override var sourceProfile: NameAndId? = null
+    override var sourceProfile: GameProfile? = null
     override var extraData: String? = null
     override var rolledBack: Boolean = false
 
@@ -76,7 +76,8 @@ abstract class AbstractActionType : ActionType {
     open fun getActionMessage(): Component = Component.translatable("text.ledger.action.$identifier")
         .withStyle {
             it.withHoverEvent(
-                HoverEvent.ShowText(
+                HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
                     identifier.literal()
                 )
             )
@@ -85,12 +86,13 @@ abstract class AbstractActionType : ActionType {
     open fun getObjectMessage(source: CommandSourceStack): Component = Component.translatable(
         Util.makeDescriptionId(
             this.getTranslationType(),
-            objectIdentifier
+            objectResourceLocation
         )
     ).setStyle(TextColorPallet.secondaryVariant).withStyle {
         it.withHoverEvent(
-            HoverEvent.ShowText(
-                objectIdentifier.toString().literal()
+            HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                objectResourceLocation.toString().literal()
             )
         )
     }
@@ -99,13 +101,15 @@ abstract class AbstractActionType : ActionType {
         .setStyle(TextColorPallet.secondary)
         .withStyle {
             it.withHoverEvent(
-                HoverEvent.ShowText(
+                HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
                     Component.literal(world?.let { "$it\n" } ?: "")
                         .append(Component.translatable("text.ledger.action_message.location.hover"))
                 )
             ).withClickEvent(
-                ClickEvent.RunCommand(
-                    "/lg tp ${world ?: Level.OVERWORLD.identifier()} ${pos.x} ${pos.y} ${pos.z}"
+                ClickEvent(
+                    ClickEvent.Action.RUN_COMMAND,
+                    "/lg tp ${world ?: Level.OVERWORLD.location()} ${pos.x} ${pos.y} ${pos.z}"
                 )
             )
         }

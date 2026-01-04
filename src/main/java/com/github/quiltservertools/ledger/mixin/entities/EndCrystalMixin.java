@@ -24,8 +24,8 @@ public abstract class EndCrystalMixin implements PlayerCausable {
         return causingPlayer;
     }
 
-    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;)V"))
-    public void correctEndCrystalEntitySource(ServerLevel world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;)Lnet/minecraft/world/level/Explosion;"))
+    public void correctEndCrystalEntitySource(DamageSource source, float f, CallbackInfoReturnable<Boolean> cir) {
         if (source.getDirectEntity() instanceof Player player) {
             this.causingPlayer = player;
         } else if (source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player player) {

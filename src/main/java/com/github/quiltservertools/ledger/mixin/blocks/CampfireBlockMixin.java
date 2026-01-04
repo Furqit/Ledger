@@ -32,15 +32,15 @@ public abstract class CampfireBlockMixin {
     @Final
     public static BooleanProperty LIT;
 
-    @Inject(method = "useItemOn", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/entity/player/Player;awardStat(Lnet/minecraft/resources/Identifier;)V")
+    @Inject(method = "use", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/player/Player;awardStat(Lnet/minecraft/resources/ResourceLocation;)V")
     )
-    public void logCampfireAddItem(ItemStack itemStack, BlockState blockState, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<InteractionResult> cir, @Local BlockEntity oldBlockEntity) {
+    public void logCampfireAddItem(BlockState blockState, Level world, BlockPos pos, Player player, InteractionHand interactionHand, BlockHitResult blockHitResult, CallbackInfoReturnable<InteractionResult> cir, @Local BlockEntity oldBlockEntity) {
         BlockChangeCallback.EVENT.invoker().changeBlock(world, pos, blockState, world.getBlockState(pos), oldBlockEntity, world.getBlockEntity(pos), Sources.INSERT, player);
     }
 
     @Inject(method = "dowse", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/level/LevelAccessor;gameEvent(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/Holder;Lnet/minecraft/core/BlockPos;)V"))
+            target = "Lnet/minecraft/world/level/LevelAccessor;gameEvent(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/core/BlockPos;)V"))
     private static void logCampfireExtinguish(Entity entity, LevelAccessor worldAccess, BlockPos pos, BlockState blockState, CallbackInfo ci) {
         if (worldAccess instanceof Level world) {
             if (entity instanceof Player player) {

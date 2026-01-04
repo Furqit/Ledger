@@ -1,6 +1,7 @@
 package com.github.quiltservertools.ledger.mixin.blocks;
 
 import com.github.quiltservertools.ledger.callbacks.BlockChangeCallback;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.entity.player.Player;
@@ -21,13 +22,13 @@ public abstract class ButtonBlockMixin {
     @Unique
     private Player activePlayer;
 
-    @Inject(method = "useWithoutItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/ButtonBlock;press(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;)V"))
-    public void logButtonClick(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit, CallbackInfoReturnable<InteractionResult> cir) {
+    @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/ButtonBlock;press(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V"))
+    public void logButtonClick(BlockState blockState, Level level, BlockPos blockPos, Player player, InteractionHand interactionHand, BlockHitResult blockHitResult, CallbackInfoReturnable<InteractionResult> cir) {
         activePlayer = player;
     }
 
     @ModifyArgs(method = "press", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
-    public void logLeverUse(Args args, BlockState state, Level world, BlockPos pos, Player playerEntity) {
+    public void logLeverUse(Args args, BlockState state, Level world, BlockPos pos) {
         if (activePlayer == null) return;
 
         BlockState newState = args.get(1);

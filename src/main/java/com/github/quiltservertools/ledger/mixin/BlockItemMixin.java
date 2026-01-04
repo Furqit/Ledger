@@ -24,8 +24,8 @@ public abstract class BlockItemMixin extends Item {
     @Inject(
             method = "place(Lnet/minecraft/world/item/context/BlockPlaceContext;)Lnet/minecraft/world/InteractionResult;",
             at = @At(
-                    value = "FIELD",
-                    target = "Lnet/minecraft/world/InteractionResult;SUCCESS:Lnet/minecraft/world/InteractionResult$Success;"
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/InteractionResult;sidedSuccess(Z)Lnet/minecraft/world/InteractionResult;"
             )
     )
     public void ledgerPlayerPlaceBlockCallback(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {

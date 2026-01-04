@@ -5,6 +5,7 @@ import com.github.quiltservertools.ledger.actionutils.Preview;
 import com.github.quiltservertools.ledger.utility.HandlerWithContext;
 import com.llamalad7.mixinextras.sugar.Local;
 import kotlin.Pair;
+import net.minecraft.core.NonNullList;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -27,19 +28,19 @@ public abstract class ServerPlayerEntityMixin {
     // synthetic field ServerPlayerEntity from the outer class
     @Final
     @Shadow
-    ServerPlayer field_58075;
+    ServerPlayer field_29182;
 
     @ModifyArg(
             method = "sendInitialData",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/network/protocol/game/ClientboundContainerSetContentPacket;<init>(IILjava/util/List;Lnet/minecraft/world/item/ItemStack;)V"
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundContainerSetContentPacket;<init>(IILnet/minecraft/core/NonNullList;Lnet/minecraft/world/item/ItemStack;)V"
             ), index = 2
     )
-    private List<ItemStack> modifyStacks(List<ItemStack> stacks, @Local(argsOnly = true) AbstractContainerMenu handler) {
+    private NonNullList<ItemStack> modifyStacks(NonNullList<ItemStack> stacks, @Local(argsOnly = true) AbstractContainerMenu handler) {
         BlockPos pos = ((HandlerWithContext) handler).getPos();
         if (pos == null) return stacks;
-        Preview preview = Ledger.previewCache.get(field_58075.getUUID());
+        Preview preview = Ledger.previewCache.get(field_29182.getUUID());
         if (preview == null) return stacks;
         List<Pair<ItemStack, Boolean>> modifiedItems = preview.getModifiedItems().get(pos);
         if (modifiedItems == null) return stacks;
@@ -51,6 +52,6 @@ public abstract class ServerPlayerEntityMixin {
                 removeMatchingItem(modifiedItem.component1(), inventory);
             }
         }
-        return inventory.getItems();
+        return inventory.items;
     }
 }

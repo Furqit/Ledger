@@ -15,9 +15,6 @@ import com.github.quiltservertools.ledger.listeners.registerEntityListeners
 import com.github.quiltservertools.ledger.listeners.registerPlayerListeners
 import com.github.quiltservertools.ledger.listeners.registerWorldEventListeners
 import com.github.quiltservertools.ledger.network.Networking
-import com.github.quiltservertools.ledger.network.packet.action.ActionS2CPacket
-import com.github.quiltservertools.ledger.network.packet.handshake.HandshakeS2CPacket
-import com.github.quiltservertools.ledger.network.packet.response.ResponseS2CPacket
 import com.github.quiltservertools.ledger.registry.ActionRegistry
 import com.uchuhimo.konf.Config
 import kotlinx.coroutines.CoroutineName
@@ -31,10 +28,9 @@ import kotlinx.coroutines.withTimeout
 import net.fabricmc.api.DedicatedServerModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.core.registries.BuiltInRegistries
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -81,9 +77,6 @@ object Ledger : DedicatedServerModInitializer, CoroutineScope {
         ServerLifecycleEvents.SERVER_STARTING.register(::serverStarting)
         ServerLifecycleEvents.SERVER_STOPPED.register(::serverStopped)
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommands(dispatcher) }
-        PayloadTypeRegistry.playS2C().register(ActionS2CPacket.ID, ActionS2CPacket.CODEC)
-        PayloadTypeRegistry.playS2C().register(HandshakeS2CPacket.ID, HandshakeS2CPacket.CODEC)
-        PayloadTypeRegistry.playS2C().register(ResponseS2CPacket.ID, ResponseS2CPacket.CODEC)
     }
 
     private fun serverStarting(server: MinecraftServer) {
@@ -97,13 +90,13 @@ object Ledger : DedicatedServerModInitializer, CoroutineScope {
         Networking
 
         Ledger.launch {
-            val idSet = setOf<Identifier>()
+            val idSet = setOf<ResourceLocation>()
                 .plus(BuiltInRegistries.BLOCK.keySet())
                 .plus(BuiltInRegistries.ITEM.keySet())
                 .plus(BuiltInRegistries.ENTITY_TYPE.keySet())
 
             logInfo("Inserting ${idSet.size} registry keys into the database...")
-            DatabaseManager.insertIdentifiers(idSet)
+            DatabaseManager.insertResourceLocations(idSet)
             logInfo("Registry insert complete")
 
             DatabaseManager.setupCache()
@@ -145,7 +138,7 @@ object Ledger : DedicatedServerModInitializer, CoroutineScope {
         registerEntityListeners()
     }
 
-    fun identifier(path: String) = Identifier.fromNamespaceAndPath(MOD_ID, path)
+    fun identifier(path: String) = ResourceLocation(MOD_ID, path)
 }
 
 fun logDebug(message: String) = Ledger.logger.debug(message)

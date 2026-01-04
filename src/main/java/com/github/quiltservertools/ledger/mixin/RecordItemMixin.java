@@ -2,10 +2,10 @@ package com.github.quiltservertools.ledger.mixin;
 
 import com.github.quiltservertools.ledger.callbacks.BlockChangeCallback;
 import com.github.quiltservertools.ledger.utility.Sources;
+import net.minecraft.world.item.RecordItem;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.item.JukeboxPlayable;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -16,12 +16,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static net.minecraft.world.level.block.JukeboxBlock.HAS_RECORD;
 
-@Mixin(JukeboxPlayable.class)
-public abstract class JukeboxPlayableMixin {
+@Mixin(RecordItem.class)
+public abstract class RecordItemMixin {
 
-    @Inject(method = "tryInsertIntoJukebox", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/level/block/entity/JukeboxBlockEntity;setTheItem(Lnet/minecraft/world/item/ItemStack;)V"))
-    private static void ledgerPlayerInsertMusicDisc(Level world, BlockPos pos, ItemStack itemStack, Player player, CallbackInfoReturnable<InteractionResult> cir) {
+    @Inject(method = "useOn", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/block/entity/JukeboxBlockEntity;setFirstItem(Lnet/minecraft/world/item/ItemStack;)V"))
+    private static void ledgerPlayerInsertMusicDisc(UseOnContext useOnContext, CallbackInfoReturnable<InteractionResult> cir) {
+        Level world = useOnContext.getLevel();
+        BlockPos pos = useOnContext.getClickedPos();
+        Player player = useOnContext.getPlayer();
         BlockState blockState = world.getBlockState(pos);
 
         BlockChangeCallback.EVENT.invoker().changeBlock(

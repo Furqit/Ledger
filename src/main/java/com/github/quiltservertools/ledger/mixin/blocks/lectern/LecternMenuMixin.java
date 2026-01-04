@@ -20,6 +20,6 @@ public class LecternMenuMixin {
     public void logPickBook(Player player, int id, CallbackInfoReturnable<Boolean> cir, @Local ItemStack itemStack) {
         ServerPlayer serverPlayer = (ServerPlayer) player;
         BlockEntity blockEntity = PlayerLecternHook.getActiveHandlers().get(player);
-        ItemRemoveCallback.EVENT.invoker().remove(itemStack, blockEntity.getBlockPos(), serverPlayer.level(), Sources.PLAYER, serverPlayer);
+        ItemRemoveCallback.EVENT.invoker().remove(itemStack, blockEntity.getBlockPos(), serverPlayer.serverLevel(), Sources.PLAYER, serverPlayer);
     }
 }

@@ -38,7 +38,7 @@ public class SignBlockMixin {
      * @return Returns the result of calling {@code original} with this method's parameters.
      */
     @WrapOperation(
-            method = "useItemOn",
+            method = "use",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/item/SignApplicator;tryApplyToSign(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/block/entity/SignBlockEntity;ZLnet/minecraft/world/entity/player/Player;)Z"
@@ -58,7 +58,7 @@ public class SignBlockMixin {
         RegistryAccess registryManager = world.registryAccess();
 
         // a bad hack to copy the old sign block entity for rollbacks
-        @Nullable BlockEntity oldSignEntity = BlockEntity.loadStatic(pos, state, NbtUtils.INSTANCE.createNbt(signBlockEntity, registryManager), registryManager);
+        @Nullable BlockEntity oldSignEntity = BlockEntity.loadStatic(pos, state, NbtUtils.INSTANCE.createNbt(signBlockEntity, registryManager));
 
         boolean result = original.call(instance, world, signBlockEntity, front, player);
         if (result && oldSignEntity != null) {

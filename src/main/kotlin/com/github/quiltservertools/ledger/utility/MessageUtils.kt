@@ -5,7 +5,7 @@ import com.github.quiltservertools.ledger.actionutils.SearchResults
 import com.github.quiltservertools.ledger.config.SearchSpec
 import com.github.quiltservertools.ledger.database.DatabaseManager
 import com.github.quiltservertools.ledger.network.Networking.hasNetworking
-import com.github.quiltservertools.ledger.network.packet.action.ActionS2CPacket
+import com.github.quiltservertools.ledger.network.packet.action.ActionPacket
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.ClickEvent
@@ -28,7 +28,9 @@ object MessageUtils {
             for (n in results.page..results.pages) {
                 val networkResults = DatabaseManager.searchActions(results.searchParams, n)
                 networkResults.actions.forEach {
-                    ServerPlayNetworking.send(source.playerOrException, ActionS2CPacket(it))
+                    val packet = ActionPacket()
+                    packet.populate(it)
+                    ServerPlayNetworking.send(source.player, packet.channel, packet.buf)
                 }
             }
             return
@@ -48,11 +50,12 @@ object MessageUtils {
                 ).setStyle(TextColorPallet.primaryVariant).withStyle {
                     if (results.page > 1) {
                         it.withHoverEvent(
-                            HoverEvent.ShowText(
+                            HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT,
                                 Component.translatable("text.ledger.footer.page_backward.hover")
                             )
                         ).withClickEvent(
-                            ClickEvent.RunCommand("/lg pg ${results.page - 1}")
+                            ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lg pg ${results.page - 1}")
                         )
                     } else {
                         Style.EMPTY
@@ -65,11 +68,12 @@ object MessageUtils {
                 ).setStyle(TextColorPallet.primaryVariant).withStyle {
                     if (results.page < results.pages) {
                         it.withHoverEvent(
-                            HoverEvent.ShowText(
+                            HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT,
                                 Component.translatable("text.ledger.footer.page_forward.hover")
                             )
                         ).withClickEvent(
-                            ClickEvent.RunCommand("/lg pg ${results.page + 1}")
+                            ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lg pg ${results.page + 1}")
                         )
                     } else {
                         Style.EMPTY
@@ -124,7 +128,8 @@ object MessageUtils {
 
         message.withStyle {
             it.withHoverEvent(
-                HoverEvent.ShowText(
+                HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
                     timeMessage
                 )
             )

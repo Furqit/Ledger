@@ -1,6 +1,6 @@
 package com.github.quiltservertools.ledger.database
 
-import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceLocation
 import org.jetbrains.exposed.v1.core.alias
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.IntIdTable
@@ -31,37 +31,40 @@ object Tables {
         companion object : IntEntityClass<Player>(Players)
     }
 
-    object ActionIdentifiers : IntIdTable() {
-        val actionIdentifier = varchar("action_identifier", MAX_ACTION_NAME_LENGTH).uniqueIndex()
+    object ActionResourceLocations : IntIdTable() {
+        val actionResourceLocation = varchar("action_identifier", MAX_ACTION_NAME_LENGTH).uniqueIndex()
     }
 
-    class ActionIdentifier(id: EntityID<Int>) : IntEntity(id) {
-        var identifier by ActionIdentifiers.actionIdentifier
+    class ActionResourceLocation(id: EntityID<Int>) : IntEntity(id) {
+        var identifier by ActionResourceLocations.actionResourceLocation
 
-        companion object : IntEntityClass<ActionIdentifier>(ActionIdentifiers)
+        companion object : IntEntityClass<ActionResourceLocation>(ActionResourceLocations)
     }
 
-    object ObjectIdentifiers : IntIdTable() {
+    object ObjectResourceLocations : IntIdTable() {
         val identifier = varchar("identifier", MAX_IDENTIFIER_LENGTH).uniqueIndex()
     }
 
-    public val oldObjectTable = ObjectIdentifiers.alias("oldObjects")
+    public val oldObjectTable = ObjectResourceLocations.alias("oldObjects")
 
-    class ObjectIdentifier(id: EntityID<Int>) : IntEntity(id) {
-        var identifier by ObjectIdentifiers.identifier.transform({ it.toString() }, { Identifier.tryParse(it)!! })
+    class ObjectResourceLocation(id: EntityID<Int>) : IntEntity(id) {
+        var identifier by ObjectResourceLocations.identifier.transform(
+            { it.toString() },
+            { ResourceLocation.tryParse(it)!! }
+        )
 
-        companion object : IntEntityClass<ObjectIdentifier>(ObjectIdentifiers)
+        companion object : IntEntityClass<ObjectResourceLocation>(ObjectResourceLocations)
     }
 
     object Actions : IntIdTable("actions") {
-        val actionIdentifier = reference("action_id", ActionIdentifiers.id).index()
+        val actionResourceLocation = reference("action_id", ActionResourceLocations.id).index()
         val timestamp = timestamp("time")
         val x = integer("x")
         val y = integer("y")
         val z = integer("z")
         val world = reference("world_id", Worlds.id)
-        val objectId = reference("object_id", ObjectIdentifiers.id).index()
-        val oldObjectId = reference("old_object_id", ObjectIdentifiers.id).index()
+        val objectId = reference("object_id", ObjectResourceLocations.id).index()
+        val oldObjectId = reference("old_object_id", ObjectResourceLocations.id).index()
         val blockState = text("block_state").nullable()
         val oldBlockState = text("old_block_state").nullable()
         val sourceName = reference("source", Sources.id).index()
@@ -75,14 +78,14 @@ object Tables {
     }
 
     class Action(id: EntityID<Int>) : IntEntity(id) {
-        var actionIdentifier by ActionIdentifier referencedOn Actions.actionIdentifier
+        var actionResourceLocation by ActionResourceLocation referencedOn Actions.actionResourceLocation
         var timestamp by Actions.timestamp
         var x by Actions.x
         var y by Actions.y
         var z by Actions.z
         var world by World referencedOn Actions.world
-        var objectId by ObjectIdentifier referencedOn Actions.objectId
-        var oldObjectId by ObjectIdentifier referencedOn Actions.oldObjectId
+        var objectId by ObjectResourceLocation referencedOn Actions.objectId
+        var oldObjectId by ObjectResourceLocation referencedOn Actions.oldObjectId
         var blockState by Actions.blockState
         var oldBlockState by Actions.oldBlockState
         var sourceName by Source referencedOn Actions.sourceName
@@ -108,7 +111,7 @@ object Tables {
     }
 
     class World(id: EntityID<Int>) : IntEntity(id) {
-        var identifier by Worlds.identifier.transform({ it.toString() }, { Identifier.tryParse(it)!! })
+        var identifier by Worlds.identifier.transform({ it.toString() }, { ResourceLocation.tryParse(it)!! })
 
         companion object : IntEntityClass<World>(Worlds)
     }

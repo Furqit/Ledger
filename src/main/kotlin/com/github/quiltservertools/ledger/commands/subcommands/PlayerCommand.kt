@@ -6,13 +6,13 @@ import com.github.quiltservertools.ledger.commands.CommandConsts
 import com.github.quiltservertools.ledger.database.DatabaseManager
 import com.github.quiltservertools.ledger.utility.LiteralNode
 import com.github.quiltservertools.ledger.utility.MessageUtils
+import com.mojang.authlib.GameProfile
 import kotlinx.coroutines.launch
 import me.lucko.fabric.api.permissions.v0.Permissions
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.arguments.GameProfileArgument
-import net.minecraft.server.players.NameAndId
 
 object PlayerCommand : BuildableCommand {
     override fun build(): LiteralNode {
@@ -27,7 +27,7 @@ object PlayerCommand : BuildableCommand {
             .build()
     }
 
-    private fun lookupPlayer(profiles: MutableCollection<NameAndId>, source: CommandSourceStack): Int {
+    private fun lookupPlayer(profiles: MutableCollection<GameProfile>, source: CommandSourceStack): Int {
         Ledger.launch {
             val players = DatabaseManager.searchPlayers(profiles.toSet())
             MessageUtils.sendPlayerMessage(source, players)

@@ -5,7 +5,6 @@ import com.github.quiltservertools.ledger.utility.Sources;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.InsideBlockEffectApplier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.server.level.ServerLevel;
@@ -52,9 +51,9 @@ public abstract class LayeredCauldronBlockMixin {
         }
     }
 
-    @Inject(method = "method_71627", at = @At(value = "INVOKE",
+    @Inject(method = "entityInside", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/block/LayeredCauldronBlock;handleEntityOnFireInside(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V"))
-    private void ledgerLogPlayerExtinguish(ServerLevel serverWorld, BlockPos blockPos, BlockState blockState, Level world, Entity collidedEntity, CallbackInfo ci) {
+    private void ledgerLogPlayerExtinguish(BlockState blockState, Level level, BlockPos blockPos, Entity collidedEntity, CallbackInfo ci) {
         if (collidedEntity instanceof Player) {
             playerEntity = (Player) collidedEntity;
         }

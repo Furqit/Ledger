@@ -45,8 +45,7 @@ object TeleportCommand : BuildableCommand {
             z,
             emptySet(),
             player.yRot,
-            player.xRot,
-            true
+            player.xRot
         )
 
         return 1

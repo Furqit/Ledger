@@ -34,14 +34,9 @@ public abstract class FillCommandMixin {
             )
     )
     private static void logFillChanges(
-            CommandSourceStack source,
-            BoundingBox range,
-            BlockInput block,
-            @Coerce Object mode,
-            Predicate<BlockInWorld> filter,
-            boolean strict,
-            CallbackInfoReturnable<Integer> cir,
-            @Local BlockPos pos) {
+            CommandSourceStack source, BoundingBox boundingBox, BlockInput block, @Coerce Object mode,
+            Predicate<BlockInWorld> predicate, CallbackInfoReturnable<Integer> cir, @Local BlockPos pos
+    ) {
         ServerLevel world = source.getLevel();
         BlockState oldState = world.getBlockState(pos);
         BlockEntity oldBlockEntity = world.getBlockEntity(pos);

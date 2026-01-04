@@ -2,10 +2,10 @@ package com.github.quiltservertools.ledger.actions
 
 import com.github.quiltservertools.ledger.utility.TextColorPallet
 import com.github.quiltservertools.ledger.utility.literal
+import net.minecraft.Util
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
-import net.minecraft.util.Util
 
 class BlockBreakActionType : BlockChangeActionType() {
     override val identifier = "block-break"
@@ -13,12 +13,13 @@ class BlockBreakActionType : BlockChangeActionType() {
     override fun getObjectMessage(source: CommandSourceStack): Component = Component.translatable(
         Util.makeDescriptionId(
             this.getTranslationType(),
-            oldObjectIdentifier
+            oldObjectResourceLocation
         )
     ).setStyle(TextColorPallet.secondaryVariant).withStyle {
         it.withHoverEvent(
-            HoverEvent.ShowText(
-                oldObjectIdentifier.toString().literal()
+            HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                oldObjectResourceLocation.toString().literal()
             )
         )
     }

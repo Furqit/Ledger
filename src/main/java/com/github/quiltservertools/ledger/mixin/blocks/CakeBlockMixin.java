@@ -57,11 +57,11 @@ public abstract class CakeBlockMixin {
                 player);
     }
 
-    @Inject(method = "useItemOn", at = @At(value = "INVOKE",
+    @Inject(method = "use", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/Level;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z",
             shift = At.Shift.AFTER))
     private void ledgerLogCakeAddCandle(
-            ItemStack itemStack, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<InteractionResult> cir) {
+            BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult, CallbackInfoReturnable<InteractionResult> cir) {
         BlockChangeCallback.EVENT.invoker().changeBlock(
                 player.level(),
                 pos,

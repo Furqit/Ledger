@@ -3,6 +3,7 @@ package com.github.quiltservertools.ledger.mixin.blocks.lectern;
 import com.github.quiltservertools.ledger.callbacks.ItemInsertCallback;
 import com.github.quiltservertools.ledger.utility.PlayerLecternHook;
 import com.github.quiltservertools.ledger.utility.Sources;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
@@ -20,8 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LecternBlock.class)
 public class LecternBlockMixin {
-    @Inject(method = "placeBook", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;playSound(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FF)V"))
-    private static void logPutBook(LivingEntity user, Level world, BlockPos pos, BlockState state, ItemStack stack, CallbackInfo ci) {
+    @Inject(method = "placeBook", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;playSound(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/core/BlockPos;Lnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FF)V"))
+    private static void logPutBook(Entity user, Level world, BlockPos pos, BlockState blockState, ItemStack itemStack, CallbackInfo ci) {
         LecternBlockEntity blockEntity = (LecternBlockEntity) world.getBlockEntity(pos);
         if (blockEntity == null) return;
         ItemInsertCallback.EVENT.invoker().insert(blockEntity.getBook(), pos, (ServerLevel) world, Sources.PLAYER, (ServerPlayer) user);

@@ -2,25 +2,22 @@ package com.github.quiltservertools.ledger.utility
 
 import com.github.quiltservertools.ledger.config.ColorSpec
 import com.github.quiltservertools.ledger.config.config
-import com.mojang.serialization.DataResult
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 
 @Suppress("MagicNumber")
 object TextColorPallet {
     val primary: Style
-        get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.primary]).getOrNull())
+        get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.primary]))
 
     val primaryVariant: Style
         get() = Style.EMPTY.withColor(
-        TextColor.parseColor(config[ColorSpec.primaryVariant]).getOrNull()
+        TextColor.parseColor(config[ColorSpec.primaryVariant])
     )
-    val secondary: Style get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.secondary]).getOrNull())
+    val secondary: Style get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.secondary]))
     val secondaryVariant: Style
         get() = Style.EMPTY.withColor(
-        TextColor.parseColor(config[ColorSpec.secondaryVariant]).getOrNull()
+        TextColor.parseColor(config[ColorSpec.secondaryVariant])
     )
-    val light: Style get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.light]).getOrNull())
+    val light: Style get() = Style.EMPTY.withColor(TextColor.parseColor(config[ColorSpec.light]))
 }
-
-fun DataResult<TextColor>.getOrNull(): TextColor? = this.result().orElse(null)

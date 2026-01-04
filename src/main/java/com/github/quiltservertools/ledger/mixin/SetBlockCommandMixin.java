@@ -29,7 +29,10 @@ public abstract class SetBlockCommandMixin {
                     target = "Lnet/minecraft/commands/arguments/blocks/BlockInput;place(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;I)Z"
             )
     )
-    private static void logSetBlockChange(Args args, CommandSourceStack source, BlockPos pos, BlockInput block, SetBlockCommand.Mode mode, @Nullable Predicate<BlockInWorld> condition, boolean strict) {
+    private static void logSetBlockChange(
+            Args args, CommandSourceStack source, BlockPos pos, BlockInput block, SetBlockCommand.Mode mode,
+            @Nullable Predicate<BlockInWorld> condition
+    ) {
         ServerLevel world = args.get(0);
 
         BlockState oldState = world.getBlockState(pos);
