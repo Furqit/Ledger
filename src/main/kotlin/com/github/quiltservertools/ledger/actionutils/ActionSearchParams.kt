@@ -20,7 +20,8 @@ data class ActionSearchParams(
     var objects: MutableSet<Negatable<Identifier>>?,
     var sourceNames: MutableSet<Negatable<String>>?,
     var sourcePlayerIds: MutableSet<Negatable<UUID>>?,
-    var worlds: MutableSet<Negatable<Identifier>>?
+    var worlds: MutableSet<Negatable<Identifier>>?,
+    var components: MutableSet<Negatable<String>>?
 ) {
     private constructor(builder: Builder) : this(
         builder.bounds,
@@ -31,7 +32,8 @@ data class ActionSearchParams(
         builder.objects,
         builder.sourceNames,
         builder.sourcePlayerIds,
-        builder.worlds
+        builder.worlds,
+        builder.components
     )
 
     fun ensureSpecific() {
@@ -44,7 +46,7 @@ data class ActionSearchParams(
                 Component.translatable("error.ledger.unspecific.range_to_big", Ledger.config[SearchSpec.maxRange])
             ).create()
         }
-        if (sourceNames == null && sourcePlayerIds == null && after == null && before == null) {
+        if (sourceNames == null && sourcePlayerIds == null && after == null && before == null && components == null) {
             throw SimpleCommandExceptionType(Component.translatable("error.ledger.unspecific.source_or_time")).create()
         }
     }
@@ -65,6 +67,7 @@ data class ActionSearchParams(
         var sourceNames: MutableSet<Negatable<String>>? = null
         var sourcePlayerIds: MutableSet<Negatable<UUID>>? = null
         var worlds: MutableSet<Negatable<Identifier>>? = null
+        var components: MutableSet<Negatable<String>>? = null
 
         fun build() = ActionSearchParams(this)
     }

@@ -39,7 +39,9 @@ import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.inSubQuery
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.notLike
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.core.statements.expandArgs
@@ -254,6 +256,16 @@ object DatabaseManager {
 
     private fun buildQueryParams(params: ActionSearchParams): Op<Boolean> {
         var op: Op<Boolean> = Op.TRUE
+
+        if (params.components != null) {
+            params.components!!.forEach {
+                op = if (it.allowed) {
+                    op.and(Tables.Actions.extraData like "%${it.property}%")
+                } else {
+                    op.and(Tables.Actions.extraData notLike "%${it.property}%")
+                }
+            }
+        }
 
         if (params.bounds != null && params.bounds != ActionSearchParams.GLOBAL) {
             op = op.and { Tables.Actions.x.between(params.bounds.minX(), params.bounds.maxX()) }

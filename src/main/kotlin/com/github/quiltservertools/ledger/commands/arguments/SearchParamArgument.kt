@@ -2,6 +2,7 @@ package com.github.quiltservertools.ledger.commands.arguments
 
 import com.github.quiltservertools.ledger.actionutils.ActionSearchParams
 import com.github.quiltservertools.ledger.commands.parameters.ActionParameter
+import com.github.quiltservertools.ledger.commands.parameters.ComponentParameter
 import com.github.quiltservertools.ledger.commands.parameters.DimensionParameter
 import com.github.quiltservertools.ledger.commands.parameters.ObjectParameter
 import com.github.quiltservertools.ledger.commands.parameters.RangeParameter
@@ -43,6 +44,7 @@ object SearchParamArgument {
         paramSuggesters["before"] = Parameter(TimeParameter())
         paramSuggesters["after"] = Parameter(TimeParameter())
         paramSuggesters["rolledback"] = Parameter(RollbackStatusParameter())
+        paramSuggesters["component"] = NegatableParameter(ComponentParameter())
     }
 
     fun argument(name: String): RequiredArgumentBuilder<CommandSourceStack, String> {
@@ -139,6 +141,16 @@ object SearchParamArgument {
                         builder.objects = objectIds
                     } else {
                         builder.objects!!.addAll(objectIds)
+                    }
+                }
+                "component" -> {
+                    val components = (value as Negatable<List<String>>).property.map {
+                         if (value.allowed) Negatable.allow(it) else Negatable.deny(it)
+                    }.toMutableSet()
+                    if (builder.components == null) {
+                         builder.components = components
+                    } else {
+                         builder.components!!.addAll(components)
                     }
                 }
                 "source" -> {
